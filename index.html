@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Validador de Código QR</title>
+    <!-- Tailwind CSS CDN para estilos responsivos y modernos -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f3f4f6;
+        }
+        /* Estilos para el mensaje emergente */
+        .message-box {
+            position: fixed;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            padding: 1.5rem 2rem;
+            border-radius: 0.75rem;
+            color: white;
+            font-weight: 600;
+            text-align: center;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            z-index: 100;
+            display: none;
+            transition: all 0.5s ease-in-out;
+            max-width: 90%;
+            width: fit-content;
+        }
+        .message-box.authorized {
+            background-color: #10b981; /* Verde esmeralda */
+        }
+        .message-box.unauthorized {
+            background-color: #ef4444; /* Rojo */
+        }
+    </style>
+</head>
+<body class="bg-gray-100 min-h-screen flex flex-col items-center p-4">
+
+    <!-- Contenedor principal de la aplicación -->
+    <div class="max-w-4xl w-full bg-white rounded-xl shadow-2xl p-6 md:p-10 space-y-8">
+
+        <!-- Título de la aplicación -->
+        <h1 class="text-4xl md:text-5xl font-bold text-center text-gray-800">
+            Validador de Acceso
+        </h1>
+
+        <!-- Pestañas de navegación -->
+        <div class="flex justify-center border-b border-gray-200">
+            <button id="tab-generator" class="py-3 px-6 text-lg font-medium text-gray-600 hover:text-indigo-600 border-b-2 border-transparent hover:border-indigo-500 focus:outline-none transition-colors duration-200">
+                Generador de Códigos
+            </button>
+            <button id="tab-scanner" class="py-3 px-6 text-lg font-medium text-gray-600 hover:text-indigo-600 border-b-2 border-transparent hover:border-indigo-500 focus:outline-none transition-colors duration-200">
+                Escáner de QR
+            </button>
+        </div>
+
+        <!-- Sección de generación de códigos QR -->
+        <div id="qr-generator-section" class="space-y-6">
+            <h2 class="text-2xl font-semibold text-gray-700 text-center">Tarjetas de Acceso Autorizado</h2>
+            <div id="qr-list" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                <!-- Los códigos QR se renderizarán aquí -->
+            </div>
+        </div>
+
+        <!-- Sección del escáner de QR -->
+        <div id="qr-scanner-section" class="hidden flex flex-col items-center space-y-6">
+            <h2 class="text-2xl font-semibold text-gray-700 text-center">Escanear para Validar</h2>
+            <button id="start-scanner-button" class="bg-indigo-600 text-white px-6 py-3 rounded-md font-semibold text-lg hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-colors duration-200">
+                Habilitar Cámara
+            </button>
+            <div id="reader" class="w-full max-w-sm rounded-lg overflow-hidden border-4 border-indigo-500 shadow-xl mt-4 hidden"></div>
+            <p id="scanner-instruction" class="text-lg text-gray-500 text-center mt-4">
+                Presiona "Habilitar Cámara" para comenzar a escanear.
+            </p>
+        </div>
+    </div>
+
+    <!-- Mensaje emergente para mostrar el resultado de la validación -->
+    <div id="message-box" class="message-box"></div>
+
+    <!-- Scripts CDN para las librerías -->
+    <!-- Librería para generar códigos QR -->
+    <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.1/build/qrcode.min.js"></script>
+    <!-- Librería para escanear códigos QR con la cámara -->
+    <script src="https://unpkg.com/html5-qrcode"></script>
+
+    <script>
+        // Lista de personas autorizadas. Esto podría ser cargado desde una base de datos.
+        const authorizedUsers = [
+            "Ana García",
+            "Juan Pérez",
+            "María López",
+            "Carlos Ruiz",
+            "Sofía Torres"
+        ];
+
+        // Elementos del DOM
+        const qrList = document.getElementById('qr-list');
+        const qrGeneratorSection = document.getElementById('qr-generator-section');
+        const qrScannerSection = document.getElementById('qr-scanner-section');
+        const messageBox = document.getElementById('message-box');
+        const tabGenerator = document.getElementById('tab-generator');
+        const tabScanner = document.getElementById('tab-scanner');
+        const startScannerButton = document.getElementById('start-scanner-button');
+        const scannerInstruction = document.getElementById('scanner-instruction');
+        const readerDiv = document.getElementById('reader');
+
+        // Variable para rastrear el estado del escáner
+        let isScannerRunning = false;
+
+        // Configuración del escáner de QR
+        const html5QrCode = new Html5Qrcode("reader");
+        const qrCodeScannerConfig = { fps: 10, qrbox: { width: 250, height: 250 } };
+
+        // Función para mostrar el mensaje de validación
+        function showMessage(message, isAuthorized) {
+            messageBox.textContent = message;
+            messageBox.style.display = 'block';
+            messageBox.classList.remove('authorized', 'unauthorized');
+            messageBox.classList.add(isAuthorized ? 'authorized' : 'unauthorized');
+            
+            // Ocultar el mensaje después de 3 segundos
+            setTimeout(() => {
+                messageBox.style.display = 'none';
+            }, 3000);
+        }
+
+        // Función para generar y mostrar los códigos QR
+        function generateQRCodes() {
+            qrList.innerHTML = ''; // Limpiar la lista existente
+            authorizedUsers.forEach(user => {
+                const card = document.createElement('div');
+                card.className = 'bg-gray-50 p-4 rounded-xl shadow-md flex flex-col items-center text-center';
+
+                const name = document.createElement('p');
+                name.className = 'text-xl font-medium text-gray-700 mb-4';
+                name.textContent = user;
+                card.appendChild(name);
+
+                const qrCanvas = document.createElement('canvas');
+                qrCanvas.className = 'w-32 h-32';
+                card.appendChild(qrCanvas);
+
+                // Generar el código QR con el nombre de la persona
+                QRCode.toCanvas(qrCanvas, user, { errorCorrectionLevel: 'H', scale: 8 }, function (error) {
+                    if (error) console.error(error);
+                });
+
+                qrList.appendChild(card);
+            });
+        }
+
+        // Callback cuando se escanea un código QR con éxito
+        const onScanSuccess = (decodedText, decodedResult) => {
+            console.log(`Código escaneado: ${decodedText}`);
+            
+            // Validar si el texto escaneado está en la lista de usuarios autorizados
+            if (authorizedUsers.includes(decodedText)) {
+                showMessage("Autorizado", true);
+            } else {
+                showMessage("No Autorizado", false);
+            }
+        };
+
+        // Función para iniciar el escáner
+        function startScanner() {
+            startScannerButton.textContent = "Iniciando...";
+            startScannerButton.disabled = true;
+            readerDiv.classList.remove('hidden');
+            scannerInstruction.textContent = "Apunta la cámara a un código QR para validar el acceso.";
+
+            html5QrCode.start({ facingMode: "environment" }, qrCodeScannerConfig, onScanSuccess)
+                .then(() => {
+                    isScannerRunning = true;
+                    startScannerButton.classList.add('hidden');
+                })
+                .catch(err => {
+                    console.error("Error al iniciar el escáner: ", err);
+                    startScannerButton.textContent = "Reintentar Habilitar Cámara";
+                    startScannerButton.disabled = false;
+                    readerDiv.classList.add('hidden');
+                    showMessage("Acceso a la cámara denegado. Por favor, permite el acceso en la configuración de tu navegador para usar el escáner.", false);
+                    scannerInstruction.textContent = "Acceso a la cámara denegado. Por favor, revisa la configuración de tu navegador.";
+                });
+        }
+        
+        // Función para cambiar de pestaña y manejar el escáner
+        function changeTab(targetTab) {
+            // Ocultar todas las secciones
+            qrGeneratorSection.classList.add('hidden');
+            qrScannerSection.classList.add('hidden');
+            tabGenerator.classList.remove('border-indigo-500', 'text-indigo-600');
+            tabScanner.classList.remove('border-indigo-500', 'text-indigo-600');
+            
+            // Detener el escáner si está corriendo
+            if (isScannerRunning) {
+                html5QrCode.stop().then(() => {
+                    isScannerRunning = false;
+                }).catch(err => {
+                    // El escáner ya está detenido o hubo un error, es un comportamiento esperado.
+                });
+            }
+
+            // Mostrar la sección y activar la pestaña correspondiente
+            if (targetTab === 'generator') {
+                qrGeneratorSection.classList.remove('hidden');
+                tabGenerator.classList.add('border-indigo-500', 'text-indigo-600');
+                generateQRCodes(); // Volver a generar los códigos al cambiar a esta pestaña
+            } else if (targetTab === 'scanner') {
+                qrScannerSection.classList.remove('hidden');
+                tabScanner.classList.add('border-indigo-500', 'text-indigo-600');
+                
+                // Reiniciar el estado del botón y la instrucción
+                startScannerButton.classList.remove('hidden');
+                startScannerButton.textContent = "Habilitar Cámara";
+                startScannerButton.disabled = false;
+                readerDiv.classList.add('hidden');
+                scannerInstruction.textContent = "Presiona 'Habilitar Cámara' para comenzar a escanear.";
+            }
+        }
+
+        // Manejadores de eventos para los botones de las pestañas
+        tabGenerator.addEventListener('click', () => changeTab('generator'));
+        tabScanner.addEventListener('click', () => changeTab('scanner'));
+        startScannerButton.addEventListener('click', startScanner);
+
+        // Iniciar la aplicación en la pestaña del generador por defecto
+        document.addEventListener('DOMContentLoaded', () => {
+            changeTab('generator');
+        });
+    </script>
+</body>
+</html>
