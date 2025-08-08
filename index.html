@@ -114,13 +114,18 @@
 
     <script>
         // Lista de personas autorizadas con un rango de fechas.
-        // La fecha de inicio (desde) y la fecha de fin (hasta) deben estar en formato 'YYYY-MM-DD'.
+        // La fecha de inicio (authorizedFrom) y la fecha de fin (authorizedUntil) deben estar en formato 'YYYY-MM-DD'.
         const authorizedUsers = [
-            { name: "Ana García", authorizedFrom: "2024-01-01", authorizedUntil: "2025-12-31" },
-            { name: "Juan Pérez", authorizedFrom: "2024-08-01", authorizedUntil: "2024-08-31" },
-            { name: "María López", authorizedFrom: "2024-08-08", authorizedUntil: "2024-08-15" },
+            // Este usuario está autorizado para el mes de agosto de 2025
+            { name: "Ana García", authorizedFrom: "2025-08-01", authorizedUntil: "2025-08-31" },
+            // Este usuario está autorizado para la primera semana de agosto de 2025
+            { name: "Juan Pérez", authorizedFrom: "2025-08-01", authorizedUntil: "2025-08-07" },
+            // Este usuario está autorizado en el futuro (septiembre de 2025)
+            { name: "María López", authorizedFrom: "2025-09-01", authorizedUntil: "2025-09-30" },
+            // Este usuario está autorizado en un rango de fechas de 2024 (ya vencido)
             { name: "Carlos Ruiz", authorizedFrom: "2024-07-01", authorizedUntil: "2024-07-31" },
-            { name: "Sofía Torres", authorizedFrom: "2024-01-01", authorizedUntil: "2024-12-31" }
+            // Este usuario está autorizado para un día específico
+            { name: "Sofía Torres", authorizedFrom: "2025-08-08", authorizedUntil: "2025-08-08" }
         ];
 
         // Elementos del DOM
@@ -131,7 +136,7 @@
         const resultPageSection = document.getElementById('result-page-section');
         const resultTitle = document.getElementById('result-title');
         const resultUserInfo = document.getElementById('result-user-info');
-        const resultDates = document.getElementById('result-dates'); // NUEVO
+        const resultDates = document.getElementById('result-dates');
         const resultBadge = document.getElementById('result-badge');
         const resultText = document.getElementById('result-text');
         const backToScannerButton = document.getElementById('back-to-scanner-button');
@@ -150,7 +155,7 @@
         const qrCodeScannerConfig = { fps: 10, qrbox: { width: 250, height: 250 } };
 
         // Función para mostrar la página de resultados
-        function showResultPage(userName, isAuthorized, dates = null) {
+        function showResultPage(userName, isAuthorized, message = null) {
             // Ocultar todas las secciones y pestañas de navegación
             qrScannerSection.classList.add('hidden');
             tabNavigation.classList.add('hidden');
@@ -171,7 +176,7 @@
                 resultBadge.classList.add('bg-green-500', 'text-white');
                 resultTitle.textContent = "Acceso Autorizado";
                 resultUserInfo.textContent = userName;
-                resultDates.textContent = `Válido desde ${dates.from} hasta ${dates.until}.`;
+                resultDates.textContent = message; // Aquí se muestra el rango de fechas
                 resultText.textContent = "Autorizado";
             } else {
                 mainContainer.classList.add('bg-unauthorized');
@@ -180,7 +185,7 @@
                 resultBadge.classList.add('bg-red-500', 'text-white');
                 resultTitle.textContent = "Acceso Denegado";
                 resultUserInfo.textContent = userName;
-                resultDates.textContent = dates; // El mensaje de error va en el campo de fechas
+                resultDates.textContent = message; // Aquí se muestra el motivo del rechazo
                 resultText.textContent = "No Autorizado";
             }
         }
@@ -221,17 +226,19 @@
             const user = authorizedUsers.find(u => u.name === decodedText);
 
             if (user) {
-                // El usuario existe, ahora validamos la fecha
                 const today = new Date();
-                // Normalizar la fecha a 'YYYY-MM-DD' para la comparación
-                const todayFormatted = today.getFullYear() + '-' + String(today.getMonth() + 1).padStart(2, '0') + '-' + String(today.getDate()).padStart(2, '0');
-                
-                const fromDate = user.authorizedFrom;
-                const untilDate = user.authorizedUntil;
+                const todayMidnight = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+                const fromDate = new Date(user.authorizedFrom);
+                const untilDate = new Date(user.authorizedUntil);
 
-                if (todayFormatted >= fromDate && todayFormatted <= untilDate) {
+                console.log("Fecha actual (medianoche):", todayMidnight);
+                console.log("Fecha de inicio:", fromDate);
+                console.log("Fecha de fin:", untilDate);
+
+                if (todayMidnight >= fromDate && todayMidnight <= untilDate) {
                     // La fecha es válida
-                    showResultPage(user.name, true, { from: fromDate, until: untilDate });
+                    const datesMessage = `Válido desde ${user.authorizedFrom} hasta ${user.authorizedUntil}.`;
+                    showResultPage(user.name, true, datesMessage);
                 } else {
                     // La fecha no es válida
                     showResultPage(user.name, false, "El acceso no está autorizado en esta fecha.");
@@ -260,7 +267,6 @@
                     startScannerButton.textContent = "Reintentar Habilitar Cámara";
                     startScannerButton.disabled = false;
                     readerDiv.classList.add('hidden');
-                    // showMessage("Acceso a la cámara denegado. Por favor, permite el acceso en la configuración de tu navegador para usar el escáner.", false);
                     scannerInstruction.textContent = "Acceso a la cámara denegado. Por favor, revisa la configuración de tu navegador.";
                 });
         }
