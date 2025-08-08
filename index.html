@@ -146,18 +146,24 @@
         const qrCodeScannerConfig = { fps: 10, qrbox: { width: 250, height: 250 } };
 
         // Función para cargar los datos del archivo JSON
-        // Esta función ahora sí funcionará correctamente al estar la app en un servidor
+        // Se ha añadido un parámetro para evitar el caché del navegador.
         async function loadUserData() {
             try {
+                // Obtener el timestamp actual para crear un parámetro único en la URL
+                const now = new Date().getTime();
+                const url = `users.json?v=${now}`;
+                
                 // Realizar la solicitud HTTP para obtener el archivo users.json
-                const response = await fetch('users.json');
+                const response = await fetch(url);
                 if (!response.ok) {
                     throw new Error(`HTTP error! status: ${response.status}`);
                 }
                 authorizedUsers = await response.json();
                 console.log("Datos de usuarios cargados:", authorizedUsers);
+
                 // Una vez que los datos están cargados, generar los códigos QR
                 generateQRCodes();
+
             } catch (error) {
                 console.error("Error al cargar los datos de los usuarios:", error);
                 // Si el archivo no se puede cargar, mostrar un mensaje de error y no continuar
@@ -327,8 +333,7 @@
             if (targetTab === 'generator') {
                 qrGeneratorSection.classList.remove('hidden');
                 tabGenerator.classList.add('border-indigo-500', 'text-indigo-600');
-                // Al volver al generador, los códigos QR se generarán automáticamente.
-                // Esta llamada se realizará después de que los datos del JSON se hayan cargado.
+                generateQRCodes();
             } else if (targetTab === 'scanner') {
                 qrScannerSection.classList.remove('hidden');
                 tabScanner.classList.add('border-indigo-500', 'text-indigo-600');
