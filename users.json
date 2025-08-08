@@ -1,4 +1,4 @@
 [
-    { "name": "Ana García", "authorizedFrom": "2025-08-01", "authorizedUntil": "2025-08-31", "photoUrl": "igagenes/Pedro 4x4.jpg" },
+    { "name": "Ana García", "authorizedFrom": "2025-08-01", "authorizedUntil": "2025-08-31", "photoUrl": "imágenes/Pedro 4x4.jpg" },
     { "name": "Juan Pérez", "authorizedFrom": "2025-08-01", "authorizedUntil": "2025-08-07", "photoUrl": "https://url-de-la-foto-de-juan.png" }
 ]
