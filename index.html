@@ -94,6 +94,8 @@
 
         <!-- NUEVA SECCIÓN: Página de validación de acceso -->
         <div id="result-page-section" class="hidden flex flex-col items-center space-y-6 text-center">
+            <!-- Espacio para la foto del usuario -->
+            <img id="result-photo" class="w-32 h-32 rounded-full ring-4 ring-gray-300 object-cover mb-4 hidden" src="" alt="Foto del usuario">
             <h2 id="result-title" class="text-4xl font-bold"></h2>
             <p id="result-user-info" class="text-2xl font-semibold"></p>
             <div id="result-dates" class="text-lg text-gray-600"></div> <!-- NUEVO ELEMENTO PARA LAS FECHAS -->
@@ -113,20 +115,8 @@
     <script src="https://unpkg.com/html5-qrcode"></script>
 
     <script>
-        // Lista de personas autorizadas con un rango de fechas.
-        // La fecha de inicio (authorizedFrom) y la fecha de fin (authorizedUntil) deben estar en formato 'YYYY-MM-DD'.
-        const authorizedUsers = [
-            // Este usuario está autorizado para el mes de agosto de 2025
-            { name: "Ana García", authorizedFrom: "2025-08-01", authorizedUntil: "2025-08-31" },
-            // Este usuario está autorizado para la primera semana de agosto de 2025
-            { name: "Juan Pérez", authorizedFrom: "2025-08-01", authorizedUntil: "2025-08-07" },
-            // Este usuario está autorizado en el futuro (septiembre de 2025)
-            { name: "María López", authorizedFrom: "2025-09-01", authorizedUntil: "2025-09-30" },
-            // Este usuario está autorizado en un rango de fechas de 2024 (ya vencido)
-            { name: "Carlos Ruiz", authorizedFrom: "2024-07-01", authorizedUntil: "2024-07-31" },
-            // Este usuario está autorizado para un día específico
-            { name: "Sofía Torres", authorizedFrom: "2025-08-08", authorizedUntil: "2025-08-08" }
-        ];
+        // Variable para almacenar la lista de usuarios. Inicialmente vacía.
+        let authorizedUsers = [];
 
         // Elementos del DOM
         const mainContainer = document.getElementById('main-container');
@@ -134,6 +124,7 @@
         const qrGeneratorSection = document.getElementById('qr-generator-section');
         const qrScannerSection = document.getElementById('qr-scanner-section');
         const resultPageSection = document.getElementById('result-page-section');
+        const resultPhoto = document.getElementById('result-photo');
         const resultTitle = document.getElementById('result-title');
         const resultUserInfo = document.getElementById('result-user-info');
         const resultDates = document.getElementById('result-dates');
@@ -154,8 +145,28 @@
         const html5QrCode = new Html5Qrcode("reader");
         const qrCodeScannerConfig = { fps: 10, qrbox: { width: 250, height: 250 } };
 
+        // Función para cargar los datos del archivo JSON
+        // Esta función ahora sí funcionará correctamente al estar la app en un servidor
+        async function loadUserData() {
+            try {
+                // Realizar la solicitud HTTP para obtener el archivo users.json
+                const response = await fetch('users.json');
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                authorizedUsers = await response.json();
+                console.log("Datos de usuarios cargados:", authorizedUsers);
+                // Una vez que los datos están cargados, generar los códigos QR
+                generateQRCodes();
+            } catch (error) {
+                console.error("Error al cargar los datos de los usuarios:", error);
+                // Si el archivo no se puede cargar, mostrar un mensaje de error y no continuar
+                qrGeneratorSection.innerHTML = '<p class="text-center text-red-500 font-semibold text-lg p-4">Error al cargar los datos del personal. Asegúrate de que el archivo `users.json` exista y sea válido en tu repositorio de GitHub.</p>';
+            }
+        }
+
         // Función para mostrar la página de resultados
-        function showResultPage(userName, isAuthorized, message = null) {
+        function showResultPage(userName, isAuthorized, message = null, photoUrl = null) {
             // Ocultar todas las secciones y pestañas de navegación
             qrScannerSection.classList.add('hidden');
             tabNavigation.classList.add('hidden');
@@ -168,6 +179,14 @@
             resultTitle.classList.remove('text-authorized', 'text-unauthorized');
             resultUserInfo.classList.remove('text-authorized', 'text-unauthorized');
             resultBadge.classList.remove('bg-green-500', 'bg-red-500');
+
+            // Actualizar la foto del usuario
+            if (photoUrl) {
+                resultPhoto.src = photoUrl;
+                resultPhoto.classList.remove('hidden');
+            } else {
+                resultPhoto.classList.add('hidden');
+            }
 
             if (isAuthorized) {
                 mainContainer.classList.add('bg-authorized');
@@ -196,6 +215,16 @@
             authorizedUsers.forEach(user => {
                 const card = document.createElement('div');
                 card.className = 'bg-gray-50 p-4 rounded-xl shadow-md flex flex-col items-center text-center';
+
+                // Agregar la imagen de perfil a la tarjeta
+                const userPhoto = document.createElement('img');
+                userPhoto.className = 'w-20 h-20 rounded-full object-cover mb-4';
+                // Usar la URL de la foto del JSON
+                userPhoto.src = user.photoUrl; 
+                userPhoto.alt = `Foto de perfil de ${user.name}`;
+                // Fallback en caso de que la imagen no cargue
+                userPhoto.onerror = () => { userPhoto.src = `https://placehold.co/100x100/CCCCCC/000000?text=${user.name.split(' ').map(n => n[0]).join('')}`; };
+                card.appendChild(userPhoto);
 
                 const name = document.createElement('p');
                 name.className = 'text-xl font-medium text-gray-700 mb-4';
@@ -238,15 +267,15 @@
                 if (todayMidnight >= fromDate && todayMidnight <= untilDate) {
                     // La fecha es válida
                     const datesMessage = `Válido desde ${user.authorizedFrom} hasta ${user.authorizedUntil}.`;
-                    showResultPage(user.name, true, datesMessage);
+                    showResultPage(user.name, true, datesMessage, user.photoUrl);
                 } else {
                     // La fecha no es válida
-                    showResultPage(user.name, false, "El acceso no está autorizado en esta fecha.");
+                    showResultPage(user.name, false, "El acceso no está autorizado en esta fecha.", user.photoUrl);
                 }
 
             } else {
                 // Usuario no encontrado
-                showResultPage(decodedText, false, "Usuario no autorizado.");
+                showResultPage(decodedText, false, "Usuario no autorizado.", null);
             }
         };
 
@@ -287,9 +316,7 @@
             if (isScannerRunning) {
                 html5QrCode.stop().then(() => {
                     isScannerRunning = false;
-                }).catch(err => {
-                    // El escáner ya está detenido o hubo un error, es un comportamiento esperado.
-                });
+                }).catch(err => {});
             }
 
             // Ocultar las clases de pestañas
@@ -300,7 +327,8 @@
             if (targetTab === 'generator') {
                 qrGeneratorSection.classList.remove('hidden');
                 tabGenerator.classList.add('border-indigo-500', 'text-indigo-600');
-                generateQRCodes(); // Volver a generar los códigos al cambiar a esta pestaña
+                // Al volver al generador, los códigos QR se generarán automáticamente.
+                // Esta llamada se realizará después de que los datos del JSON se hayan cargado.
             } else if (targetTab === 'scanner') {
                 qrScannerSection.classList.remove('hidden');
                 tabScanner.classList.add('border-indigo-500', 'text-indigo-600');
@@ -320,8 +348,9 @@
         startScannerButton.addEventListener('click', startScanner);
         backToScannerButton.addEventListener('click', () => changeTab('scanner'));
 
-        // Iniciar la aplicación en la pestaña del generador por defecto
+        // Iniciar la aplicación y cargar los datos
         document.addEventListener('DOMContentLoaded', () => {
+            loadUserData(); // Inicia el proceso de carga de datos
             changeTab('generator');
         });
     </script>
