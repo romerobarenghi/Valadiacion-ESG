@@ -77,6 +77,19 @@
                 Presiona "Habilitar Cámara" para comenzar a escanear.
             </p>
         </div>
+
+        <!-- NUEVA SECCIÓN: Página de validación de acceso -->
+        <div id="authorized-page-section" class="hidden flex flex-col items-center space-y-6 text-center">
+            <h2 class="text-4xl font-bold text-gray-800">Acceso Autorizado</h2>
+            <p id="authorized-user-name" class="text-2xl font-semibold text-gray-700"></p>
+            <div class="bg-green-500 text-white font-bold py-3 px-6 rounded-full shadow-lg">
+                <span class="text-xl">Autorizado</span>
+            </div>
+            <button id="back-to-scanner-button" class="bg-gray-500 text-white px-6 py-3 rounded-md font-semibold text-lg hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-gray-400 transition-colors duration-200 mt-8">
+                Volver
+            </button>
+        </div>
+
     </div>
 
     <!-- Mensaje emergente para mostrar el resultado de la validación -->
@@ -102,6 +115,9 @@
         const qrList = document.getElementById('qr-list');
         const qrGeneratorSection = document.getElementById('qr-generator-section');
         const qrScannerSection = document.getElementById('qr-scanner-section');
+        const authorizedPageSection = document.getElementById('authorized-page-section'); // NUEVO
+        const authorizedUserName = document.getElementById('authorized-user-name'); // NUEVO
+        const backToScannerButton = document.getElementById('back-to-scanner-button'); // NUEVO
         const messageBox = document.getElementById('message-box');
         const tabGenerator = document.getElementById('tab-generator');
         const tabScanner = document.getElementById('tab-scanner');
@@ -154,14 +170,23 @@
             });
         }
 
+        // NUEVA FUNCIÓN: Mostrar la página de autorización
+        function showAuthorizedPage(userName) {
+            qrScannerSection.classList.add('hidden');
+            authorizedPageSection.classList.remove('hidden');
+            authorizedUserName.textContent = userName;
+        }
+
         // Callback cuando se escanea un código QR con éxito
         const onScanSuccess = (decodedText, decodedResult) => {
             console.log(`Código escaneado: ${decodedText}`);
             
             // Validar si el texto escaneado está en la lista de usuarios autorizados
             if (authorizedUsers.includes(decodedText)) {
-                showMessage("Autorizado", true);
+                // Si está autorizado, mostramos la nueva página
+                showAuthorizedPage(decodedText);
             } else {
+                // Si no está autorizado, mostramos el mensaje emergente
                 showMessage("No Autorizado", false);
             }
         };
@@ -193,6 +218,7 @@
             // Ocultar todas las secciones
             qrGeneratorSection.classList.add('hidden');
             qrScannerSection.classList.add('hidden');
+            authorizedPageSection.classList.add('hidden'); // NUEVO
             tabGenerator.classList.remove('border-indigo-500', 'text-indigo-600');
             tabScanner.classList.remove('border-indigo-500', 'text-indigo-600');
             
@@ -227,6 +253,7 @@
         tabGenerator.addEventListener('click', () => changeTab('generator'));
         tabScanner.addEventListener('click', () => changeTab('scanner'));
         startScannerButton.addEventListener('click', startScanner);
+        backToScannerButton.addEventListener('click', () => changeTab('scanner')); // NUEVO
 
         // Iniciar la aplicación en la pestaña del generador por defecto
         document.addEventListener('DOMContentLoaded', () => {
