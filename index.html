@@ -96,6 +96,7 @@
         <div id="result-page-section" class="hidden flex flex-col items-center space-y-6 text-center">
             <h2 id="result-title" class="text-4xl font-bold"></h2>
             <p id="result-user-info" class="text-2xl font-semibold"></p>
+            <div id="result-dates" class="text-lg text-gray-600"></div> <!-- NUEVO ELEMENTO PARA LAS FECHAS -->
             <div id="result-badge" class="font-bold py-3 px-6 rounded-full shadow-lg">
                 <span id="result-text" class="text-xl"></span>
             </div>
@@ -112,13 +113,14 @@
     <script src="https://unpkg.com/html5-qrcode"></script>
 
     <script>
-        // Lista de personas autorizadas. Esto podría ser cargado desde una base de datos.
+        // Lista de personas autorizadas con un rango de fechas.
+        // La fecha de inicio (desde) y la fecha de fin (hasta) deben estar en formato 'YYYY-MM-DD'.
         const authorizedUsers = [
-            "Ana García",
-            "Juan Pérez",
-            "María López",
-            "Carlos Ruiz",
-            "Sofía Torres"
+            { name: "Ana García", authorizedFrom: "2024-01-01", authorizedUntil: "2025-12-31" },
+            { name: "Juan Pérez", authorizedFrom: "2024-08-01", authorizedUntil: "2024-08-31" },
+            { name: "María López", authorizedFrom: "2024-08-08", authorizedUntil: "2024-08-15" },
+            { name: "Carlos Ruiz", authorizedFrom: "2024-07-01", authorizedUntil: "2024-07-31" },
+            { name: "Sofía Torres", authorizedFrom: "2024-01-01", authorizedUntil: "2024-12-31" }
         ];
 
         // Elementos del DOM
@@ -129,12 +131,13 @@
         const resultPageSection = document.getElementById('result-page-section');
         const resultTitle = document.getElementById('result-title');
         const resultUserInfo = document.getElementById('result-user-info');
+        const resultDates = document.getElementById('result-dates'); // NUEVO
         const resultBadge = document.getElementById('result-badge');
         const resultText = document.getElementById('result-text');
         const backToScannerButton = document.getElementById('back-to-scanner-button');
         const tabGenerator = document.getElementById('tab-generator');
         const tabScanner = document.getElementById('tab-scanner');
-        const tabNavigation = document.getElementById('tab-navigation'); // VARIABLE CORREGIDA
+        const tabNavigation = document.getElementById('tab-navigation');
         const startScannerButton = document.getElementById('start-scanner-button');
         const scannerInstruction = document.getElementById('scanner-instruction');
         const readerDiv = document.getElementById('reader');
@@ -147,7 +150,7 @@
         const qrCodeScannerConfig = { fps: 10, qrbox: { width: 250, height: 250 } };
 
         // Función para mostrar la página de resultados
-        function showResultPage(userName, isAuthorized) {
+        function showResultPage(userName, isAuthorized, dates = null) {
             // Ocultar todas las secciones y pestañas de navegación
             qrScannerSection.classList.add('hidden');
             tabNavigation.classList.add('hidden');
@@ -168,6 +171,7 @@
                 resultBadge.classList.add('bg-green-500', 'text-white');
                 resultTitle.textContent = "Acceso Autorizado";
                 resultUserInfo.textContent = userName;
+                resultDates.textContent = `Válido desde ${dates.from} hasta ${dates.until}.`;
                 resultText.textContent = "Autorizado";
             } else {
                 mainContainer.classList.add('bg-unauthorized');
@@ -176,6 +180,7 @@
                 resultBadge.classList.add('bg-red-500', 'text-white');
                 resultTitle.textContent = "Acceso Denegado";
                 resultUserInfo.textContent = userName;
+                resultDates.textContent = dates; // El mensaje de error va en el campo de fechas
                 resultText.textContent = "No Autorizado";
             }
         }
@@ -189,7 +194,7 @@
 
                 const name = document.createElement('p');
                 name.className = 'text-xl font-medium text-gray-700 mb-4';
-                name.textContent = user;
+                name.textContent = user.name;
                 card.appendChild(name);
 
                 const qrCanvas = document.createElement('canvas');
@@ -197,7 +202,7 @@
                 card.appendChild(qrCanvas);
 
                 // Generar el código QR con el nombre de la persona
-                QRCode.toCanvas(qrCanvas, user, { errorCorrectionLevel: 'H', scale: 8 }, function (error) {
+                QRCode.toCanvas(qrCanvas, user.name, { errorCorrectionLevel: 'H', scale: 8 }, function (error) {
                     if (error) console.error(error);
                 });
 
@@ -212,9 +217,30 @@
                 isScannerRunning = false;
             }).catch(err => {});
 
-            // Validar si el texto escaneado está en la lista de usuarios autorizados
-            const isAuthorized = authorizedUsers.includes(decodedText);
-            showResultPage(decodedText, isAuthorized);
+            // Buscar al usuario escaneado en la lista de autorizados
+            const user = authorizedUsers.find(u => u.name === decodedText);
+
+            if (user) {
+                // El usuario existe, ahora validamos la fecha
+                const today = new Date();
+                // Normalizar la fecha a 'YYYY-MM-DD' para la comparación
+                const todayFormatted = today.getFullYear() + '-' + String(today.getMonth() + 1).padStart(2, '0') + '-' + String(today.getDate()).padStart(2, '0');
+                
+                const fromDate = user.authorizedFrom;
+                const untilDate = user.authorizedUntil;
+
+                if (todayFormatted >= fromDate && todayFormatted <= untilDate) {
+                    // La fecha es válida
+                    showResultPage(user.name, true, { from: fromDate, until: untilDate });
+                } else {
+                    // La fecha no es válida
+                    showResultPage(user.name, false, "El acceso no está autorizado en esta fecha.");
+                }
+
+            } else {
+                // Usuario no encontrado
+                showResultPage(decodedText, false, "Usuario no autorizado.");
+            }
         };
 
         // Función para iniciar el escáner
@@ -234,7 +260,7 @@
                     startScannerButton.textContent = "Reintentar Habilitar Cámara";
                     startScannerButton.disabled = false;
                     readerDiv.classList.add('hidden');
-                    showMessage("Acceso a la cámara denegado. Por favor, permite el acceso en la configuración de tu navegador para usar el escáner.", false);
+                    // showMessage("Acceso a la cámara denegado. Por favor, permite el acceso en la configuración de tu navegador para usar el escáner.", false);
                     scannerInstruction.textContent = "Acceso a la cámara denegado. Por favor, revisa la configuración de tu navegador.";
                 });
         }
