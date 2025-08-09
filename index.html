@@ -6,6 +6,8 @@
     <title>Validador de Código QR</title>
     <!-- Tailwind CSS CDN para estilos responsivos y modernos -->
     <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Librería para convertir elementos HTML en imágenes -->
+    <script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
         body {
@@ -65,17 +67,23 @@
             /* Mostrar las tarjetas en una grilla para optimizar el espacio en la hoja */
             #qr-list {
                 display: grid;
-                grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-                gap: 1rem;
+                /* El grid se ajusta automáticamente para que las tarjetas no se corten */
+                grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+                gap: 1.5rem;
                 justify-content: center;
             }
-            /* Ajustar el tamaño de la tarjeta para impresión */
+            /* Ajustar el tamaño de la tarjeta para impresión, quitando la sombra y el padding extra */
             .printable-card {
-                width: 250px;
+                width: 280px;
                 height: auto;
                 box-shadow: none; /* Eliminar sombras para impresión */
                 border: 1px solid #ccc; /* Añadir un borde sutil */
                 padding: 1rem;
+            }
+            .printable-card canvas {
+                /* Asegurar que el canvas del QR también se ajuste */
+                width: 120px;
+                height: 120px;
             }
         }
     </style>
@@ -176,7 +184,7 @@
         const scannerInstruction = document.getElementById('scanner-instruction');
         const readerDiv = document.getElementById('reader');
         const printButton = document.getElementById('print-button');
-        const saveButton = document.getElementById('save-button'); // NUEVO: Botón de guardar
+        const saveButton = document.getElementById('save-button');
 
         // Variable para rastrear el estado del escáner
         let isScannerRunning = false;
@@ -398,22 +406,34 @@
             window.print();
         }
 
-        // NUEVO: Función para guardar los QR como imágenes
-        function saveQRCodesAsImages() {
-            // Obtener todos los elementos canvas de los códigos QR
-            const canvases = document.querySelectorAll('canvas');
+        // NUEVO: Función para guardar las tarjetas COMPLETAS como imágenes
+        async function saveCardsAsImages() {
+            // Obtener todos los elementos de la tarjeta
+            const cards = document.querySelectorAll('.printable-card');
+            
+            for (const card of cards) {
+                // Usar html2canvas para renderizar cada tarjeta a un canvas
+                const canvas = await html2canvas(card, {
+                    scale: 2, // Aumenta la escala para una mejor calidad de imagen
+                    logging: false // Desactiva los mensajes de la consola
+                });
 
-            canvases.forEach(canvas => {
+                // Obtener la URL de la imagen del canvas
                 const dataURL = canvas.toDataURL('image/png');
+                
+                // Crear un enlace temporal para la descarga
                 const link = document.createElement('a');
                 link.href = dataURL;
-                // Usar el ID del canvas para generar un nombre de archivo
-                const userName = canvas.id.replace('qr-canvas-', '');
-                link.download = `${userName}-QR.png`;
+                
+                // Obtener el nombre del usuario de la tarjeta para el nombre del archivo
+                const userName = card.id.replace('card-', '');
+                link.download = `${userName}-credencial.png`;
+                
+                // Simular el clic en el enlace para iniciar la descarga
                 document.body.appendChild(link);
                 link.click();
                 document.body.removeChild(link);
-            });
+            }
         }
 
         // Manejadores de eventos para los botones de las pestañas
@@ -422,7 +442,8 @@
         startScannerButton.addEventListener('click', startScanner);
         backToScannerButton.addEventListener('click', () => changeTab('scanner'));
         printButton.addEventListener('click', printCards);
-        saveButton.addEventListener('click', saveQRCodesAsImages); // NUEVO: Evento para guardar
+        // NUEVO: El botón de guardar ahora llama a la nueva función
+        saveButton.addEventListener('click', saveCardsAsImages);
 
         // Iniciar la aplicación y cargar los datos
         document.addEventListener('DOMContentLoaded', () => {
