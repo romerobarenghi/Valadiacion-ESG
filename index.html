@@ -50,6 +50,34 @@
         .text-unauthorized {
             color: #991b1b; /* Rojo oscuro */
         }
+
+        /* Estilos específicos para la impresión */
+        @media print {
+            body {
+                background-color: white !important; /* Fondo blanco para ahorrar tinta */
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
+            }
+            /* Ocultar elementos no necesarios para la impresión */
+            .no-print {
+                display: none !important;
+            }
+            /* Mostrar las tarjetas en una grilla para optimizar el espacio en la hoja */
+            #qr-list {
+                display: grid;
+                grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+                gap: 1rem;
+                justify-content: center;
+            }
+            /* Ajustar el tamaño de la tarjeta para impresión */
+            .printable-card {
+                width: 250px;
+                height: auto;
+                box-shadow: none; /* Eliminar sombras para impresión */
+                border: 1px solid #ccc; /* Añadir un borde sutil */
+                padding: 1rem;
+            }
+        }
     </style>
 </head>
 <body class="bg-gray-100 min-h-screen flex flex-col items-center p-4">
@@ -58,12 +86,12 @@
     <div id="main-container" class="max-w-4xl w-full bg-white rounded-xl shadow-2xl p-6 md:p-10 space-y-8 transition-colors duration-500">
 
         <!-- Título de la aplicación -->
-        <h1 class="text-4xl md:text-5xl font-bold text-center text-gray-800">
+        <h1 class="text-4xl md:text-5xl font-bold text-center text-gray-800 no-print">
             Validador de Acceso
         </h1>
 
         <!-- Pestañas de navegación -->
-        <div id="tab-navigation" class="flex justify-center border-b border-gray-200">
+        <div id="tab-navigation" class="flex justify-center border-b border-gray-200 no-print">
             <button id="tab-generator" class="py-3 px-6 text-lg font-medium text-gray-600 hover:text-indigo-600 border-b-2 border-transparent hover:border-indigo-500 focus:outline-none transition-colors duration-200">
                 Generador de Códigos
             </button>
@@ -74,15 +102,24 @@
 
         <!-- Sección de generación de códigos QR -->
         <div id="qr-generator-section" class="space-y-6">
-            <h2 class="text-2xl font-semibold text-gray-700 text-center">Tarjetas de Acceso Autorizado</h2>
-            <!-- Se ha cambiado el grid por flex para mejor control del tamaño de la tarjeta -->
+            <h2 class="text-2xl font-semibold text-gray-700 text-center no-print">Tarjetas de Acceso Autorizado</h2>
+            <!-- Botones de impresión y guardar como imagen -->
+            <div class="flex justify-center gap-4 no-print">
+                <button id="print-button" class="bg-indigo-600 text-white px-6 py-3 rounded-md font-semibold text-lg hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-colors duration-200">
+                    Imprimir Tarjetas
+                </button>
+                <button id="save-button" class="bg-green-600 text-white px-6 py-3 rounded-md font-semibold text-lg hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 transition-colors duration-200">
+                    Guardar como Imagen
+                </button>
+            </div>
+            
             <div id="qr-list" class="flex flex-col items-center gap-6">
                 <!-- Los códigos QR se renderizarán aquí -->
             </div>
         </div>
 
         <!-- Sección del escáner de QR -->
-        <div id="qr-scanner-section" class="hidden flex flex-col items-center space-y-6">
+        <div id="qr-scanner-section" class="hidden flex flex-col items-center space-y-6 no-print">
             <h2 class="text-2xl font-semibold text-gray-700 text-center">Escanear para Validar</h2>
             <button id="start-scanner-button" class="bg-indigo-600 text-white px-6 py-3 rounded-md font-semibold text-lg hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-colors duration-200">
                 Habilitar Cámara
@@ -93,7 +130,7 @@
             </p>
         </div>
 
-        <!-- NUEVA SECCIÓN: Página de validación de acceso -->
+        <!-- SECCIÓN: Página de validación de acceso -->
         <div id="result-page-section" class="hidden flex flex-col items-center space-y-6 text-center">
             <!-- Espacio para la foto del usuario -->
             <img id="result-photo" class="w-32 h-32 rounded-full ring-4 ring-gray-300 object-cover mb-4 hidden" src="" alt="Foto del usuario">
@@ -138,6 +175,8 @@
         const startScannerButton = document.getElementById('start-scanner-button');
         const scannerInstruction = document.getElementById('scanner-instruction');
         const readerDiv = document.getElementById('reader');
+        const printButton = document.getElementById('print-button');
+        const saveButton = document.getElementById('save-button'); // NUEVO: Botón de guardar
 
         // Variable para rastrear el estado del escáner
         let isScannerRunning = false;
@@ -222,7 +261,9 @@
             authorizedUsers.forEach(user => {
                 const card = document.createElement('div');
                 // Se ha ajustado el tamaño de la tarjeta para que se vea más como una credencial
-                card.className = 'max-w-xs w-full bg-gray-50 p-6 rounded-xl shadow-lg flex flex-col items-center text-center';
+                card.className = 'max-w-xs w-full bg-gray-50 p-6 rounded-xl shadow-lg flex flex-col items-center text-center printable-card';
+                // NUEVO: Agregar un ID para identificar el usuario
+                card.id = `card-${user.name.replace(/\s/g, '-')}`;
 
                 // Agregar la imagen de perfil a la tarjeta
                 const userPhoto = document.createElement('img');
@@ -241,6 +282,8 @@
                 card.appendChild(name);
 
                 const qrCanvas = document.createElement('canvas');
+                // NUEVO: Agregar un ID para el canvas y usar un nombre de archivo
+                qrCanvas.id = `qr-canvas-${user.name.replace(/\s/g, '-')}`;
                 qrCanvas.className = 'w-40 h-40 mt-4';
                 card.appendChild(qrCanvas);
 
@@ -350,11 +393,36 @@
             }
         }
 
+        // Función para imprimir las tarjetas
+        function printCards() {
+            window.print();
+        }
+
+        // NUEVO: Función para guardar los QR como imágenes
+        function saveQRCodesAsImages() {
+            // Obtener todos los elementos canvas de los códigos QR
+            const canvases = document.querySelectorAll('canvas');
+
+            canvases.forEach(canvas => {
+                const dataURL = canvas.toDataURL('image/png');
+                const link = document.createElement('a');
+                link.href = dataURL;
+                // Usar el ID del canvas para generar un nombre de archivo
+                const userName = canvas.id.replace('qr-canvas-', '');
+                link.download = `${userName}-QR.png`;
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+            });
+        }
+
         // Manejadores de eventos para los botones de las pestañas
         tabGenerator.addEventListener('click', () => changeTab('generator'));
         tabScanner.addEventListener('click', () => changeTab('scanner'));
         startScannerButton.addEventListener('click', startScanner);
         backToScannerButton.addEventListener('click', () => changeTab('scanner'));
+        printButton.addEventListener('click', printCards);
+        saveButton.addEventListener('click', saveQRCodesAsImages); // NUEVO: Evento para guardar
 
         // Iniciar la aplicación y cargar los datos
         document.addEventListener('DOMContentLoaded', () => {
