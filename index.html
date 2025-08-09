@@ -79,6 +79,9 @@
                 box-shadow: none; /* Eliminar sombras para impresión */
                 border: 1px solid #ccc; /* Añadir un borde sutil */
                 padding: 1rem;
+                /* SOLUCIÓN: Evita que el elemento se corte al final de una página */
+                break-inside: avoid;
+                margin-bottom: 1.5rem; /* Asegura un espacio adecuado entre tarjetas */
             }
             .printable-card canvas {
                 /* Asegurar que el canvas del QR también se ajuste */
