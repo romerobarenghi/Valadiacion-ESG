@@ -66,11 +66,9 @@
             }
             /* Mostrar las tarjetas en una grilla para optimizar el espacio en la hoja */
             #qr-list {
-                display: grid;
-                /* El grid se ajusta automáticamente para que las tarjetas no se corten */
-                grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-                gap: 1.5rem;
-                justify-content: center;
+                display: block; /* Cambiamos a block para mejorar la compatibilidad de impresión */
+                /* Asegura que el contenido se ajuste correctamente */
+                padding: 1.5rem;
             }
             /* Ajustar el tamaño de la tarjeta para impresión, quitando la sombra y el padding extra */
             .printable-card {
@@ -79,8 +77,8 @@
                 box-shadow: none; /* Eliminar sombras para impresión */
                 border: 1px solid #ccc; /* Añadir un borde sutil */
                 padding: 1rem;
-                /* SOLUCIÓN: Evita que el elemento se corte al final de una página */
-                break-inside: avoid;
+                /* SOLUCIÓN MEJORADA: Evita que el elemento se corte al final de una página (nueva propiedad) */
+                page-break-inside: avoid;
                 margin-bottom: 1.5rem; /* Asegura un espacio adecuado entre tarjetas */
             }
             .printable-card canvas {
