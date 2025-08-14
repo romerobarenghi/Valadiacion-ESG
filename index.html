@@ -282,16 +282,15 @@
 
                 // Agregar la imagen de perfil a la tarjeta
                 const userPhoto = document.createElement('img');
-                // CAMBIO: Reducimos el tamaño de la imagen a 80x80px para que encaje en el nuevo diseño
-                userPhoto.className = 'w-20 h-20 rounded-lg object-cover ring-2 ring-gray-300';
+                // SE REVIERTE EL TAMAÑO: Se usa 96x96px para que encaje en el diseño que solicitaste
+                userPhoto.className = 'w-24 h-24 rounded-lg object-cover ring-2 ring-gray-300';
                 // Usar la URL de la foto del JSON
                 userPhoto.src = user.photoUrl; 
                 userPhoto.alt = `Foto de perfil de ${user.name}`;
-                // Fallback en caso de que la imagen no cargue, ahora con el nuevo tamaño
-                userPhoto.onerror = () => { userPhoto.src = `https://placehold.co/80x80/CCCCCC/000000?text=${user.name.split(' ').map(n => n[0]).join('')}`; };
+                // Fallback en caso de que la imagen no cargue, ahora con el tamaño de 96x96
+                userPhoto.onerror = () => { userPhoto.src = `https://placehold.co/96x96/CCCCCC/000000?text=${user.name.split(' ').map(n => n[0]).join('')}`; };
                 leftContent.appendChild(userPhoto);
                 
-                // CAMBIO: El nombre ahora está en un div flexible
                 const name = document.createElement('p');
                 name.className = 'text-lg font-bold text-gray-700 mt-2';
                 name.textContent = user.name;
@@ -417,7 +416,7 @@
             window.print();
         }
 
-        // NUEVO: Función para guardar las tarjetas COMPLETAS como imágenes
+        // Función para guardar las tarjetas COMPLETAS como imágenes
         async function saveCardsAsImages() {
             // Obtener todos los elementos de la tarjeta
             const cards = document.querySelectorAll('.printable-card');
