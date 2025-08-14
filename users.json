@@ -66,17 +66,14 @@
             }
             /* Mostrar las tarjetas en una grilla para optimizar el espacio en la hoja */
             #qr-list {
-                display: flex; /* Cambiamos a flex para una grilla */
-                flex-wrap: wrap;
-                justify-content: center;
+                display: block; /* Cambiamos a block para mejorar la compatibilidad de impresión */
                 /* Asegura que el contenido se ajuste correctamente */
                 padding: 1.5rem;
-                gap: 1.5rem;
             }
             /* Ajustar el tamaño de la tarjeta para impresión, quitando la sombra y el padding extra */
             .printable-card {
-                width: 320px; /* Ancho fijo para impresión */
-                height: 208px; /* Alto fijo para impresión */
+                width: 280px;
+                height: auto;
                 box-shadow: none; /* Eliminar sombras para impresión */
                 border: 1px solid #ccc; /* Añadir un borde sutil */
                 padding: 1rem;
@@ -86,8 +83,8 @@
             }
             .printable-card canvas {
                 /* Asegurar que el canvas del QR también se ajuste */
-                width: 96px;
-                height: 96px;
+                width: 120px;
+                height: 120px;
             }
         }
     </style>
@@ -272,38 +269,31 @@
             qrList.innerHTML = ''; // Limpiar la lista existente
             authorizedUsers.forEach(user => {
                 const card = document.createElement('div');
-                // CAMBIO PRINCIPAL: Se ajustan las clases para el formato horizontal de tarjeta de crédito
-                card.className = 'w-[320px] h-[208px] bg-gray-50 p-4 rounded-xl shadow-lg flex flex-row items-center justify-between printable-card';
-                // Agregar un ID para identificar el usuario
+                // Se ha ajustado el tamaño de la tarjeta para que se vea más como una credencial
+                card.className = 'max-w-xs w-full bg-gray-50 p-6 rounded-xl shadow-lg flex flex-col items-center text-center printable-card';
+                // NUEVO: Agregar un ID para identificar el usuario
                 card.id = `card-${user.name.replace(/\s/g, '-')}`;
-
-                const leftContent = document.createElement('div');
-                leftContent.className = 'flex flex-col items-center gap-2';
 
                 // Agregar la imagen de perfil a la tarjeta
                 const userPhoto = document.createElement('img');
-                // CAMBIO: Reducimos el tamaño de la imagen a 96x96px para que encaje en el nuevo diseño
-                userPhoto.className = 'w-24 h-24 rounded-lg object-cover ring-2 ring-gray-300';
+                // CAMBIO: Reducimos el tamaño a 176x176px (w-44) para que sea aproximadamente el 60% del ancho de la tarjeta.
+                userPhoto.className = 'w-44 h-44 rounded-lg object-cover mb-4 ring-2 ring-gray-300';
                 // Usar la URL de la foto del JSON
                 userPhoto.src = user.photoUrl; 
                 userPhoto.alt = `Foto de perfil de ${user.name}`;
                 // Fallback en caso de que la imagen no cargue, ahora con el nuevo tamaño
-                userPhoto.onerror = () => { userPhoto.src = `https://placehold.co/96x96/CCCCCC/000000?text=${user.name.split(' ').map(n => n[0]).join('')}`; };
-                leftContent.appendChild(userPhoto);
-                
-                // CAMBIO: El nombre ahora está en un div flexible
-                const name = document.createElement('p');
-                name.className = 'text-lg font-bold text-gray-700 mt-2';
-                name.textContent = user.name;
-                leftContent.appendChild(name);
+                userPhoto.onerror = () => { userPhoto.src = `https://placehold.co/176x176/CCCCCC/000000?text=${user.name.split(' ').map(n => n[0]).join('')}`; };
+                card.appendChild(userPhoto);
 
-                card.appendChild(leftContent);
+                const name = document.createElement('p');
+                name.className = 'text-xl font-bold text-gray-700 mb-4';
+                name.textContent = user.name;
+                card.appendChild(name);
 
                 const qrCanvas = document.createElement('canvas');
                 // NUEVO: Agregar un ID para el canvas y usar un nombre de archivo
                 qrCanvas.id = `qr-canvas-${user.name.replace(/\s/g, '-')}`;
-                // CAMBIO: El tamaño del QR es de 96x96px para que encaje en el nuevo diseño
-                qrCanvas.className = 'w-24 h-24';
+                qrCanvas.className = 'w-40 h-40 mt-4';
                 card.appendChild(qrCanvas);
 
                 // Generar el código QR con el nombre de la persona
