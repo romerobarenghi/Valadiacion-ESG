@@ -251,19 +251,19 @@
             qrList.innerHTML = '';
             authorizedUsers.forEach(user => {
                 const card = document.createElement('div');
-                // NUEVO: Se usan valores fijos para el rectángulo áureo
+                // Se usan valores fijos para el rectángulo áureo
                 card.className = 'w-[320px] h-[518px] bg-gray-50 p-6 rounded-xl shadow-lg flex flex-col items-center justify-between printable-card';
                 card.id = `card-${user.name.replace(/\s/g, '-')}`;
 
                 const topContent = document.createElement('div');
                 topContent.className = 'flex flex-col items-center space-y-4';
 
-                // Imagen de perfil con tamaño ajustado
+                // Imagen de perfil con tamaño ajustado (aumentada en 20%)
                 const userPhoto = document.createElement('img');
-                userPhoto.className = 'w-40 h-40 rounded-lg object-cover ring-2 ring-gray-300';
+                userPhoto.className = 'w-48 h-48 rounded-lg object-cover ring-2 ring-gray-300';
                 userPhoto.src = user.photoUrl; 
                 userPhoto.alt = `Foto de perfil de ${user.name}`;
-                userPhoto.onerror = () => { userPhoto.src = `https://placehold.co/160x160/CCCCCC/000000?text=${user.name.split(' ').map(n => n[0]).join('')}`; };
+                userPhoto.onerror = () => { userPhoto.src = `https://placehold.co/192x192/CCCCCC/000000?text=${user.name.split(' ').map(n => n[0]).join('')}`; };
                 topContent.appendChild(userPhoto);
 
                 // Nombre del usuario
@@ -283,10 +283,10 @@
                 cardTitle.textContent = 'ID de Acceso';
                 bottomContent.appendChild(cardTitle);
 
-                // Canvas para el código QR con tamaño ajustado
+                // Canvas para el código QR con tamaño ajustado (reducido en 20%)
                 const qrCanvas = document.createElement('canvas');
                 qrCanvas.id = `qr-canvas-${user.name.replace(/\s/g, '-')}`;
-                qrCanvas.className = 'w-40 h-40';
+                qrCanvas.className = 'w-32 h-32';
                 bottomContent.appendChild(qrCanvas);
                 
                 card.appendChild(bottomContent);
