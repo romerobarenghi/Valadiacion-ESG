@@ -8,7 +8,7 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- Librería para convertir elementos HTML en imágenes -->
     <script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
-    <!-- CORREGIDO: Usar <link> para la fuente en lugar de @import en <style> -->
+    <!-- Usar <link> para la fuente en lugar de @import en <style> -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
@@ -17,7 +17,7 @@
             font-family: 'Inter', sans-serif;
             background-color: #f3f4f6;
         }
-        /* Estilos para el mensaje emergente, si es necesario */
+        /* Estilos para el mensaje emergente */
         .message-box {
             position: fixed;
             top: 20px;
@@ -59,31 +59,28 @@
         /* Estilos específicos para la impresión */
         @media print {
             body {
-                background-color: white !important; /* Fondo blanco para ahorrar tinta */
+                background-color: white !important;
                 -webkit-print-color-adjust: exact;
                 print-color-adjust: exact;
             }
-            /* Ocultar elementos no necesarios para la impresión */
             .no-print {
                 display: none !important;
             }
-            /* Restablecer a layout vertical para impresión */
             #qr-list {
                 display: flex;
                 flex-direction: column;
                 align-items: center;
                 gap: 1.5rem;
             }
-            /* Ajustar el tamaño de la tarjeta para impresión, quitando la sombra y el padding extra */
+            /* Ajustar el tamaño de la tarjeta para impresión con la proporción áurea */
             .printable-card {
-                width: 320px; /* Ancho fijo para impresión */
-                height: auto;
-                box-shadow: none; /* Eliminar sombras para impresión */
-                border: 1px solid #ccc; /* Añadir un borde sutil */
+                width: 320px;
+                height: 518px; /* Proporción áurea (320 * 1.618) */
+                box-shadow: none;
+                border: 1px solid #ccc;
                 padding: 1rem;
-                /* SOLUCIÓN MEJORADA: Evita que el elemento se corte al final de una página */
                 page-break-inside: avoid;
-                margin-bottom: 1.5rem; /* Asegura un espacio adecuado entre tarjetas */
+                margin-bottom: 1.5rem;
             }
         }
     </style>
@@ -121,7 +118,6 @@
                 </button>
             </div>
             
-            <!-- CAMBIO: Se usa layout flex-col para mostrar las tarjetas verticalmente -->
             <div id="qr-list" class="flex flex-col items-center gap-6">
                 <!-- Los códigos QR se renderizarán aquí -->
             </div>
@@ -145,7 +141,7 @@
             <img id="result-photo" class="w-32 h-32 rounded-lg ring-4 ring-gray-300 object-cover mb-4 hidden" src="" alt="Foto del usuario">
             <h2 id="result-title" class="text-4xl font-bold"></h2>
             <p id="result-user-info" class="text-2xl font-semibold"></p>
-            <div id="result-dates" class="text-lg text-gray-600"></div> <!-- NUEVO ELEMENTO PARA LAS FECHAS -->
+            <div id="result-dates" class="text-lg text-gray-600"></div>
             <div id="result-badge" class="font-bold py-3 px-6 rounded-full shadow-lg">
                 <span id="result-text" class="text-xl"></span>
             </div>
@@ -156,9 +152,7 @@
     </div>
 
     <!-- Scripts CDN para las librerías -->
-    <!-- Librería para generar códigos QR -->
     <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.1/build/qrcode.min.js"></script>
-    <!-- Librería para escanear códigos QR con la cámara -->
     <script src="https://unpkg.com/html5-qrcode"></script>
 
     <script>
@@ -195,47 +189,35 @@
         const qrCodeScannerConfig = { fps: 10, qrbox: { width: 250, height: 250 } };
 
         // Función para cargar los datos del archivo JSON
-        // Se ha añadido un parámetro para evitar el caché del navegador.
         async function loadUserData() {
             try {
-                // Obtener el timestamp actual para crear un parámetro único en la URL
                 const now = new Date().getTime();
                 const url = `users.json?v=${now}`;
                 
-                // Realizar la solicitud HTTP para obtener el archivo users.json
                 const response = await fetch(url);
                 if (!response.ok) {
                     throw new Error(`HTTP error! status: ${response.status}`);
                 }
                 authorizedUsers = await response.json();
                 console.log("Datos de usuarios cargados:", authorizedUsers);
-
-                // Una vez que los datos están cargados, generar los códigos QR
                 generateQRCodes();
-
             } catch (error) {
                 console.error("Error al cargar los datos de los usuarios:", error);
-                // Si el archivo no se puede cargar, mostrar un mensaje de error y no continuar
                 qrGeneratorSection.innerHTML = '<p class="text-center text-red-500 font-semibold text-lg p-4">Error al cargar los datos del personal. Asegúrate de que el archivo `users.json` exista y sea válido en tu repositorio de GitHub.</p>';
             }
         }
 
         // Función para mostrar la página de resultados
         function showResultPage(userName, isAuthorized, message = null, photoUrl = null) {
-            // Ocultar todas las secciones y pestañas de navegación
             qrScannerSection.classList.add('hidden');
             tabNavigation.classList.add('hidden');
-
-            // Mostrar la sección de resultados
             resultPageSection.classList.remove('hidden');
 
-            // Limpiar clases de color y aplicar las nuevas
             mainContainer.classList.remove('bg-white', 'bg-authorized', 'bg-unauthorized');
             resultTitle.classList.remove('text-authorized', 'text-unauthorized');
             resultUserInfo.classList.remove('text-authorized', 'text-unauthorized');
             resultBadge.classList.remove('bg-green-500', 'bg-red-500');
 
-            // Actualizar la foto del usuario
             if (photoUrl) {
                 resultPhoto.src = photoUrl;
                 resultPhoto.classList.remove('hidden');
@@ -250,7 +232,7 @@
                 resultBadge.classList.add('bg-green-500', 'text-white');
                 resultTitle.textContent = "Acceso Autorizado";
                 resultUserInfo.textContent = userName;
-                resultDates.textContent = message; // Aquí se muestra el rango de fechas
+                resultDates.textContent = message;
                 resultText.textContent = "Autorizado";
             } else {
                 mainContainer.classList.add('bg-unauthorized');
@@ -259,47 +241,56 @@
                 resultBadge.classList.add('bg-red-500', 'text-white');
                 resultTitle.textContent = "Acceso Denegado";
                 resultUserInfo.textContent = userName;
-                resultDates.textContent = message; // Aquí se muestra el motivo del rechazo
+                resultDates.textContent = message;
                 resultText.textContent = "No Autorizado";
             }
         }
 
-        // Función para generar y mostrar los códigos QR (con el diseño vertical)
+        // Función para generar y mostrar los códigos QR con la nueva proporción áurea
         function generateQRCodes() {
-            qrList.innerHTML = ''; // Limpiar la lista existente
+            qrList.innerHTML = '';
             authorizedUsers.forEach(user => {
                 const card = document.createElement('div');
-                // Se ajustan las clases para un formato vertical
-                card.className = 'w-full max-w-sm bg-gray-50 p-6 rounded-xl shadow-lg flex flex-col items-center space-y-4 printable-card';
+                // NUEVO: Se usan valores fijos para el rectángulo áureo
+                card.className = 'w-[320px] h-[518px] bg-gray-50 p-6 rounded-xl shadow-lg flex flex-col items-center justify-between printable-card';
                 card.id = `card-${user.name.replace(/\s/g, '-')}`;
 
-                // Imagen de perfil
+                const topContent = document.createElement('div');
+                topContent.className = 'flex flex-col items-center space-y-4';
+
+                // Imagen de perfil con tamaño ajustado
                 const userPhoto = document.createElement('img');
-                userPhoto.className = 'w-32 h-32 rounded-lg object-cover ring-2 ring-gray-300';
+                userPhoto.className = 'w-40 h-40 rounded-lg object-cover ring-2 ring-gray-300';
                 userPhoto.src = user.photoUrl; 
                 userPhoto.alt = `Foto de perfil de ${user.name}`;
-                userPhoto.onerror = () => { userPhoto.src = `https://placehold.co/128x128/CCCCCC/000000?text=${user.name.split(' ').map(n => n[0]).join('')}`; };
-                card.appendChild(userPhoto);
+                userPhoto.onerror = () => { userPhoto.src = `https://placehold.co/160x160/CCCCCC/000000?text=${user.name.split(' ').map(n => n[0]).join('')}`; };
+                topContent.appendChild(userPhoto);
 
                 // Nombre del usuario
                 const name = document.createElement('p');
-                name.className = 'text-xl font-bold text-gray-700 text-center';
+                name.className = 'text-2xl font-bold text-gray-700 text-center';
                 name.textContent = user.name;
-                card.appendChild(name);
+                topContent.appendChild(name);
                 
-                // Título de la tarjeta (se mantiene)
+                card.appendChild(topContent);
+
+                const bottomContent = document.createElement('div');
+                bottomContent.className = 'flex flex-col items-center space-y-4';
+                
+                // Título de la tarjeta
                 const cardTitle = document.createElement('p');
                 cardTitle.className = 'text-sm font-semibold text-gray-400';
                 cardTitle.textContent = 'ID de Acceso';
-                card.appendChild(cardTitle);
+                bottomContent.appendChild(cardTitle);
 
-                // Canvas para el código QR
+                // Canvas para el código QR con tamaño ajustado
                 const qrCanvas = document.createElement('canvas');
                 qrCanvas.id = `qr-canvas-${user.name.replace(/\s/g, '-')}`;
                 qrCanvas.className = 'w-40 h-40';
-                card.appendChild(qrCanvas);
+                bottomContent.appendChild(qrCanvas);
                 
-                // Generar el código QR con el nombre de la persona
+                card.appendChild(bottomContent);
+
                 QRCode.toCanvas(qrCanvas, user.name, { errorCorrectionLevel: 'H', scale: 8 }, function (error) {
                     if (error) console.error(error);
                 });
@@ -315,7 +306,6 @@
                 isScannerRunning = false;
             }).catch(err => {});
 
-            // Buscar al usuario escaneado en la lista de autorizados
             const user = authorizedUsers.find(u => u.name === decodedText);
 
             if (user) {
@@ -329,16 +319,13 @@
                 console.log("Fecha de fin:", untilDate);
 
                 if (todayMidnight >= fromDate && todayMidnight <= untilDate) {
-                    // La fecha es válida
                     const datesMessage = `Válido desde ${user.authorizedFrom} hasta ${user.authorizedUntil}.`;
                     showResultPage(user.name, true, datesMessage, user.photoUrl);
                 } else {
-                    // La fecha no es válida
                     showResultPage(user.name, false, "El acceso no está autorizado en esta fecha.", user.photoUrl);
                 }
 
             } else {
-                // Usuario no encontrado
                 showResultPage(decodedText, false, "Usuario no autorizado.", null);
             }
         };
@@ -366,28 +353,23 @@
         
         // Función para cambiar de pestaña y manejar el escáner
         function changeTab(targetTab) {
-            // Ocultar todas las secciones
             qrGeneratorSection.classList.add('hidden');
             qrScannerSection.classList.add('hidden');
             resultPageSection.classList.add('hidden');
 
-            // Volver al fondo blanco y mostrar la navegación
             mainContainer.classList.remove('bg-authorized', 'bg-unauthorized');
             mainContainer.classList.add('bg-white');
             tabNavigation.classList.remove('hidden');
             
-            // Detener el escáner si está corriendo
             if (isScannerRunning) {
                 html5QrCode.stop().then(() => {
                     isScannerRunning = false;
                 }).catch(err => {});
             }
 
-            // Ocultar las clases de pestañas
             tabGenerator.classList.remove('border-indigo-500', 'text-indigo-600');
             tabScanner.classList.remove('border-indigo-500', 'text-indigo-600');
 
-            // Mostrar la sección y activar la pestaña correspondiente
             if (targetTab === 'generator') {
                 qrGeneratorSection.classList.remove('hidden');
                 tabGenerator.classList.add('border-indigo-500', 'text-indigo-600');
@@ -396,7 +378,6 @@
                 qrScannerSection.classList.remove('hidden');
                 tabScanner.classList.add('border-indigo-500', 'text-indigo-600');
                 
-                // Reiniciar el estado del botón y la instrucción
                 startScannerButton.classList.remove('hidden');
                 startScannerButton.textContent = "Habilitar Cámara";
                 startScannerButton.disabled = false;
@@ -410,48 +391,39 @@
             window.print();
         }
 
-        // NUEVO: Función para guardar las tarjetas COMPLETAS como imágenes
+        // Función para guardar las tarjetas COMPLETAS como imágenes
         async function saveCardsAsImages() {
-            // Obtener todos los elementos de la tarjeta
             const cards = document.querySelectorAll('.printable-card');
             
             for (const card of cards) {
-                // Usar html2canvas para renderizar cada tarjeta a un canvas
                 const canvas = await html2canvas(card, {
-                    scale: 2, // Aumenta la escala para una mejor calidad de imagen
-                    logging: false // Desactiva los mensajes de la consola
+                    scale: 2,
+                    logging: false
                 });
 
-                // Obtener la URL de la imagen del canvas
                 const dataURL = canvas.toDataURL('image/png');
-                
-                // Crear un enlace temporal para la descarga
                 const link = document.createElement('a');
                 link.href = dataURL;
-                
-                // Obtener el nombre del usuario de la tarjeta para el nombre del archivo
                 const userName = card.id.replace('card-', '');
                 link.download = `${userName}-credencial.png`;
                 
-                // Simular el clic en el enlace para iniciar la descarga
                 document.body.appendChild(link);
                 link.click();
                 document.body.removeChild(link);
             }
         }
 
-        // Manejadores de eventos para los botones de las pestañas
+        // Manejadores de eventos para los botones
         tabGenerator.addEventListener('click', () => changeTab('generator'));
         tabScanner.addEventListener('click', () => changeTab('scanner'));
         startScannerButton.addEventListener('click', startScanner);
         backToScannerButton.addEventListener('click', () => changeTab('scanner'));
         printButton.addEventListener('click', printCards);
-        // El botón de guardar ahora llama a la nueva función
         saveButton.addEventListener('click', saveCardsAsImages);
 
         // Iniciar la aplicación y cargar los datos
         document.addEventListener('DOMContentLoaded', () => {
-            loadUserData(); // Inicia el proceso de carga de datos
+            loadUserData();
             changeTab('generator');
         });
     </script>
