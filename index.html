@@ -38,6 +38,9 @@
         .message-box.unauthorized {
             background-color: #ef4444; /* Rojo */
         }
+        .message-box.info {
+            background-color: #3b82f6; /* Azul */
+        }
 
         /* Clases de colores de fondo dinámicos */
         .bg-authorized {
@@ -153,6 +156,9 @@
             </button>
         </div>
     </div>
+    
+    <!-- Mensaje emergente para mostrar el resultado de la validación -->
+    <div id="message-box" class="message-box"></div>
 
     <!-- Scripts CDN para las librerías -->
     <!-- Librería para generar códigos QR -->
@@ -185,6 +191,7 @@
         const readerDiv = document.getElementById('reader');
         const printButton = document.getElementById('print-button');
         const saveButton = document.getElementById('save-button');
+        const messageBox = document.getElementById('message-box');
 
         // Variable para rastrear el estado del escáner
         let isScannerRunning = false;
@@ -192,6 +199,18 @@
         // Configuración del escáner de QR
         const html5QrCode = new Html5Qrcode("reader");
         const qrCodeScannerConfig = { fps: 10, qrbox: { width: 250, height: 250 } };
+
+        // Función para mostrar mensajes emergentes
+        function showMessage(message, type = 'info') {
+            messageBox.textContent = message;
+            messageBox.classList.remove('authorized', 'unauthorized', 'info');
+            messageBox.classList.add(type);
+            messageBox.style.display = 'block';
+
+            setTimeout(() => {
+                messageBox.style.display = 'none';
+            }, 5000);
+        }
 
         // Función para cargar los datos del archivo JSON
         // Se ha añadido un parámetro para evitar el caché del navegador.
@@ -208,9 +227,6 @@
                 }
                 authorizedUsers = await response.json();
                 console.log("Datos de usuarios cargados:", authorizedUsers);
-
-                // Una vez que los datos están cargados, generar los códigos QR
-                generateQRCodes();
 
             } catch (error) {
                 console.error("Error al cargar los datos de los usuarios:", error);
@@ -269,19 +285,13 @@
             qrList.innerHTML = ''; // Limpiar la lista existente
             authorizedUsers.forEach(user => {
                 const card = document.createElement('div');
-                // NUEVO: Se revierte a un formato de tarjeta vertical sin altura fija.
                 card.className = 'w-[320px] bg-gray-50 p-6 rounded-xl shadow-lg flex flex-col items-center text-center printable-card';
-                // Agregar un ID para identificar el usuario
                 card.id = `card-${user.name.replace(/\s/g, '-')}`;
 
-                // Agregar la imagen de perfil a la tarjeta
                 const userPhoto = document.createElement('img');
-                // NUEVO: Se revierte al tamaño original de la foto para el formato vertical.
                 userPhoto.className = 'w-32 h-32 rounded-lg object-cover ring-2 ring-gray-300';
-                // Usar la URL de la foto del JSON
                 userPhoto.src = user.photoUrl; 
                 userPhoto.alt = `Foto de perfil de ${user.name}`;
-                // Fallback en caso de que la imagen no cargue, ahora con el tamaño de 128x128.
                 userPhoto.onerror = () => { userPhoto.src = `https://placehold.co/128x128/CCCCCC/000000?text=${user.name.split(' ').map(n => n[0]).join('')}`; };
                 card.appendChild(userPhoto);
                 
@@ -291,13 +301,10 @@
                 card.appendChild(name);
 
                 const qrCanvas = document.createElement('canvas');
-                // NUEVO: Agregar un ID para el canvas y usar un nombre de archivo.
                 qrCanvas.id = `qr-canvas-${user.name.replace(/\s/g, '-')}`;
-                // NUEVO: El tamaño del QR se ajusta para el formato vertical.
                 qrCanvas.className = 'w-32 h-32 mt-4';
                 card.appendChild(qrCanvas);
 
-                // Generar el código QR con el nombre de la persona
                 QRCode.toCanvas(qrCanvas, user.name, { errorCorrectionLevel: 'H', scale: 8 }, function (error) {
                     if (error) console.error(error);
                 });
@@ -313,7 +320,6 @@
                 isScannerRunning = false;
             }).catch(err => {});
 
-            // Buscar al usuario escaneado en la lista de autorizados
             const user = authorizedUsers.find(u => u.name === decodedText);
 
             if (user) {
@@ -322,21 +328,13 @@
                 const fromDate = new Date(user.authorizedFrom);
                 const untilDate = new Date(user.authorizedUntil);
 
-                console.log("Fecha actual (medianoche):", todayMidnight);
-                console.log("Fecha de inicio:", fromDate);
-                console.log("Fecha de fin:", untilDate);
-
                 if (todayMidnight >= fromDate && todayMidnight <= untilDate) {
-                    // La fecha es válida
                     const datesMessage = `Válido desde ${user.authorizedFrom} hasta ${user.authorizedUntil}.`;
                     showResultPage(user.name, true, datesMessage, user.photoUrl);
                 } else {
-                    // La fecha no es válida
                     showResultPage(user.name, false, "El acceso no está autorizado en esta fecha.", user.photoUrl);
                 }
-
             } else {
-                // Usuario no encontrado
                 showResultPage(decodedText, false, "Usuario no autorizado.", null);
             }
         };
@@ -364,28 +362,23 @@
         
         // Función para cambiar de pestaña y manejar el escáner
         function changeTab(targetTab) {
-            // Ocultar todas las secciones
             qrGeneratorSection.classList.add('hidden');
             qrScannerSection.classList.add('hidden');
             resultPageSection.classList.add('hidden');
 
-            // Volver al fondo blanco y mostrar la navegación
             mainContainer.classList.remove('bg-authorized', 'bg-unauthorized');
             mainContainer.classList.add('bg-white');
             tabNavigation.classList.remove('hidden');
             
-            // Detener el escáner si está corriendo
             if (isScannerRunning) {
                 html5QrCode.stop().then(() => {
                     isScannerRunning = false;
                 }).catch(err => {});
             }
 
-            // Ocultar las clases de pestañas
             tabGenerator.classList.remove('border-indigo-500', 'text-indigo-600');
             tabScanner.classList.remove('border-indigo-500', 'text-indigo-600');
 
-            // Mostrar la sección y activar la pestaña correspondiente
             if (targetTab === 'generator') {
                 qrGeneratorSection.classList.remove('hidden');
                 tabGenerator.classList.add('border-indigo-500', 'text-indigo-600');
@@ -394,12 +387,31 @@
                 qrScannerSection.classList.remove('hidden');
                 tabScanner.classList.add('border-indigo-500', 'text-indigo-600');
                 
-                // Reiniciar el estado del botón y la instrucción
                 startScannerButton.classList.remove('hidden');
                 startScannerButton.textContent = "Habilitar Cámara";
                 startScannerButton.disabled = false;
                 readerDiv.classList.add('hidden');
                 scannerInstruction.textContent = "Presiona 'Habilitar Cámara' para comenzar a escanear.";
+            }
+        }
+
+        // NUEVA FUNCIÓN: Maneja el inicio de sesión para el generador
+        function handleGeneratorLogin() {
+            const username = prompt("Ingresa el usuario:");
+            const password = prompt("Ingresa la contraseña:");
+
+            // Credenciales codificadas
+            const correctUsername = "admin";
+            const correctPassword = "admin123";
+
+            if (username === correctUsername && password === correctPassword) {
+                // Si las credenciales son correctas, cambia a la pestaña del generador
+                changeTab('generator');
+            } else {
+                // Si son incorrectas, muestra un mensaje y permanece en la pestaña actual
+                showMessage("Usuario o contraseña incorrectos.", "unauthorized");
+                // Asegurar que estamos en el escáner si el login falla
+                changeTab('scanner');
             }
         }
 
@@ -410,45 +422,36 @@
 
         // Función para guardar las tarjetas COMPLETAS como imágenes
         async function saveCardsAsImages() {
-            // Obtener todos los elementos de la tarjeta
             const cards = document.querySelectorAll('.printable-card');
             
             for (const card of cards) {
-                // Usar html2canvas para renderizar cada tarjeta a un canvas
                 const canvas = await html2canvas(card, {
-                    scale: 2, // Aumenta la escala para una mejor calidad de imagen
-                    logging: false // Desactiva los mensajes de la consola
+                    scale: 2,
+                    logging: false
                 });
 
-                // Obtener la URL de la imagen del canvas
                 const dataURL = canvas.toDataURL('image/png');
-                
-                // Crear un enlace temporal para la descarga
                 const link = document.createElement('a');
                 link.href = dataURL;
-                
-                // Obtener el nombre del usuario de la tarjeta para el nombre del archivo
                 const userName = card.id.replace('card-', '');
                 link.download = `${userName}-credencial.png`;
-                
-                // Simular el clic en el enlace para iniciar la descarga
                 document.body.appendChild(link);
                 link.click();
                 document.body.removeChild(link);
             }
         }
 
-        // Manejadores de eventos para los botones de las pestañas
-        tabGenerator.addEventListener('click', () => changeTab('generator'));
+        // Manejadores de eventos actualizados
+        tabGenerator.addEventListener('click', handleGeneratorLogin); // Cambia el manejador para el login
         tabScanner.addEventListener('click', () => changeTab('scanner'));
         startScannerButton.addEventListener('click', startScanner);
         backToScannerButton.addEventListener('click', () => changeTab('scanner'));
         printButton.addEventListener('click', printCards);
-        // NUEVO: El botón de guardar ahora llama a la nueva función
         saveButton.addEventListener('click', saveCardsAsImages);
 
         // Iniciar la aplicación en la pestaña del escáner por defecto
         document.addEventListener('DOMContentLoaded', () => {
+            loadUserData();
             changeTab('scanner');
         });
     </script>
