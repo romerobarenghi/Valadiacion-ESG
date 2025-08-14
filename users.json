@@ -8,11 +8,8 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- Librería para convertir elementos HTML en imágenes -->
     <script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
-    <!-- CORREGIDO: Usar <link> para la fuente en lugar de @import en <style> -->
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
     <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
         body {
             font-family: 'Inter', sans-serif;
             background-color: #f3f4f6;
@@ -67,23 +64,30 @@
             .no-print {
                 display: none !important;
             }
-            /* Restablecer a layout vertical para impresión */
+            /* Mostrar las tarjetas en una grilla para optimizar el espacio en la hoja */
             #qr-list {
-                display: flex;
-                flex-direction: column;
-                align-items: center;
+                display: flex; /* Cambiamos a flex para una grilla */
+                flex-wrap: wrap;
+                justify-content: center;
+                /* Asegura que el contenido se ajuste correctamente */
+                padding: 1.5rem;
                 gap: 1.5rem;
             }
             /* Ajustar el tamaño de la tarjeta para impresión, quitando la sombra y el padding extra */
             .printable-card {
                 width: 320px; /* Ancho fijo para impresión */
-                height: auto;
+                height: 208px; /* Alto fijo para impresión */
                 box-shadow: none; /* Eliminar sombras para impresión */
                 border: 1px solid #ccc; /* Añadir un borde sutil */
                 padding: 1rem;
                 /* SOLUCIÓN MEJORADA: Evita que el elemento se corte al final de una página */
                 page-break-inside: avoid;
                 margin-bottom: 1.5rem; /* Asegura un espacio adecuado entre tarjetas */
+            }
+            .printable-card canvas {
+                /* Asegurar que el canvas del QR también se ajuste */
+                width: 96px;
+                height: 96px;
             }
         }
     </style>
@@ -121,7 +125,6 @@
                 </button>
             </div>
             
-            <!-- CAMBIO: Se usa layout flex-col para mostrar las tarjetas verticalmente -->
             <div id="qr-list" class="flex flex-col items-center gap-6">
                 <!-- Los códigos QR se renderizarán aquí -->
             </div>
@@ -264,41 +267,45 @@
             }
         }
 
-        // Función para generar y mostrar los códigos QR (con el diseño vertical)
+        // Función para generar y mostrar los códigos QR
         function generateQRCodes() {
             qrList.innerHTML = ''; // Limpiar la lista existente
             authorizedUsers.forEach(user => {
                 const card = document.createElement('div');
-                // Se ajustan las clases para un formato vertical
-                card.className = 'w-full max-w-sm bg-gray-50 p-6 rounded-xl shadow-lg flex flex-col items-center space-y-4 printable-card';
+                // CAMBIO PRINCIPAL: Se ajustan las clases para el formato horizontal de tarjeta de crédito
+                card.className = 'w-[320px] h-[208px] bg-gray-50 p-4 rounded-xl shadow-lg flex flex-row items-center justify-between printable-card';
+                // Agregar un ID para identificar el usuario
                 card.id = `card-${user.name.replace(/\s/g, '-')}`;
 
-                // Imagen de perfil
+                const leftContent = document.createElement('div');
+                leftContent.className = 'flex flex-col items-center gap-2';
+
+                // Agregar la imagen de perfil a la tarjeta
                 const userPhoto = document.createElement('img');
-                userPhoto.className = 'w-32 h-32 rounded-lg object-cover ring-2 ring-gray-300';
+                // CAMBIO: Reducimos el tamaño de la imagen a 96x96px para que encaje en el nuevo diseño
+                userPhoto.className = 'w-24 h-24 rounded-lg object-cover ring-2 ring-gray-300';
+                // Usar la URL de la foto del JSON
                 userPhoto.src = user.photoUrl; 
                 userPhoto.alt = `Foto de perfil de ${user.name}`;
-                userPhoto.onerror = () => { userPhoto.src = `https://placehold.co/128x128/CCCCCC/000000?text=${user.name.split(' ').map(n => n[0]).join('')}`; };
-                card.appendChild(userPhoto);
-
-                // Nombre del usuario
+                // Fallback en caso de que la imagen no cargue, ahora con el nuevo tamaño
+                userPhoto.onerror = () => { userPhoto.src = `https://placehold.co/96x96/CCCCCC/000000?text=${user.name.split(' ').map(n => n[0]).join('')}`; };
+                leftContent.appendChild(userPhoto);
+                
+                // CAMBIO: El nombre ahora está en un div flexible
                 const name = document.createElement('p');
-                name.className = 'text-xl font-bold text-gray-700 text-center';
+                name.className = 'text-lg font-bold text-gray-700 mt-2';
                 name.textContent = user.name;
-                card.appendChild(name);
-                
-                // Título de la tarjeta (se mantiene)
-                const cardTitle = document.createElement('p');
-                cardTitle.className = 'text-sm font-semibold text-gray-400';
-                cardTitle.textContent = 'ID de Acceso';
-                card.appendChild(cardTitle);
+                leftContent.appendChild(name);
 
-                // Canvas para el código QR
+                card.appendChild(leftContent);
+
                 const qrCanvas = document.createElement('canvas');
+                // NUEVO: Agregar un ID para el canvas y usar un nombre de archivo
                 qrCanvas.id = `qr-canvas-${user.name.replace(/\s/g, '-')}`;
-                qrCanvas.className = 'w-40 h-40';
+                // CAMBIO: El tamaño del QR es de 96x96px para que encaje en el nuevo diseño
+                qrCanvas.className = 'w-24 h-24';
                 card.appendChild(qrCanvas);
-                
+
                 // Generar el código QR con el nombre de la persona
                 QRCode.toCanvas(qrCanvas, user.name, { errorCorrectionLevel: 'H', scale: 8 }, function (error) {
                     if (error) console.error(error);
@@ -446,7 +453,7 @@
         startScannerButton.addEventListener('click', startScanner);
         backToScannerButton.addEventListener('click', () => changeTab('scanner'));
         printButton.addEventListener('click', printCards);
-        // El botón de guardar ahora llama a la nueva función
+        // NUEVO: El botón de guardar ahora llama a la nueva función
         saveButton.addEventListener('click', saveCardsAsImages);
 
         // Iniciar la aplicación y cargar los datos
