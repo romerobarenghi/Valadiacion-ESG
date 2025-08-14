@@ -77,7 +77,7 @@
                 box-shadow: none; /* Eliminar sombras para impresión */
                 border: 1px solid #ccc; /* Añadir un borde sutil */
                 padding: 1rem;
-                /* SOLUCIÓN MEJORADA: Evita que el elemento se corte al final de una página (nueva propiedad) */
+                /* SOLUCIÓN MEJORADA: Evita que el elemento se corte al final de una página */
                 page-break-inside: avoid;
                 margin-bottom: 1.5rem; /* Asegura un espacio adecuado entre tarjetas */
             }
@@ -276,13 +276,13 @@
 
                 // Agregar la imagen de perfil a la tarjeta
                 const userPhoto = document.createElement('img');
-                // Se ha aumentado el tamaño de la foto
-                userPhoto.className = 'w-28 h-28 rounded-full object-cover mb-4 ring-2 ring-gray-300';
+                // Se ha aumentado el tamaño de la foto a 128x128px, que es aproximadamente el 45% del ancho de la tarjeta en impresión.
+                userPhoto.className = 'w-32 h-32 rounded-full object-cover mb-4 ring-2 ring-gray-300';
                 // Usar la URL de la foto del JSON
                 userPhoto.src = user.photoUrl; 
                 userPhoto.alt = `Foto de perfil de ${user.name}`;
                 // Fallback en caso de que la imagen no cargue
-                userPhoto.onerror = () => { userPhoto.src = `https://placehold.co/120x120/CCCCCC/000000?text=${user.name.split(' ').map(n => n[0]).join('')}`; };
+                userPhoto.onerror = () => { userPhoto.src = `https://placehold.co/128x128/CCCCCC/000000?text=${user.name.split(' ').map(n => n[0]).join('')}`; };
                 card.appendChild(userPhoto);
 
                 const name = document.createElement('p');
