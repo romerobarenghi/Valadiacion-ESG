@@ -109,7 +109,7 @@
         </div>
 
         <!-- Sección de generación de códigos QR -->
-        <div id="qr-generator-section" class="space-y-6">
+        <div id="qr-generator-section" class="hidden space-y-6">
             <h2 class="text-2xl font-semibold text-gray-700 text-center no-print">Tarjetas de Acceso Autorizado</h2>
             <!-- Botones de impresión y guardar como imagen -->
             <div class="flex justify-center gap-4 no-print">
@@ -127,7 +127,7 @@
         </div>
 
         <!-- Sección del escáner de QR -->
-        <div id="qr-scanner-section" class="hidden flex flex-col items-center space-y-6 no-print">
+        <div id="qr-scanner-section" class="flex flex-col items-center space-y-6 no-print">
             <h2 class="text-2xl font-semibold text-gray-700 text-center">Escanear para Validar</h2>
             <button id="start-scanner-button" class="bg-indigo-600 text-white px-6 py-3 rounded-md font-semibold text-lg hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-colors duration-200">
                 Habilitar Cámara
@@ -223,6 +223,7 @@
         function showResultPage(userName, isAuthorized, message = null, photoUrl = null) {
             // Ocultar todas las secciones y pestañas de navegación
             qrScannerSection.classList.add('hidden');
+            qrGeneratorSection.classList.add('hidden');
             tabNavigation.classList.add('hidden');
 
             // Mostrar la sección de resultados
@@ -446,10 +447,9 @@
         // NUEVO: El botón de guardar ahora llama a la nueva función
         saveButton.addEventListener('click', saveCardsAsImages);
 
-        // Iniciar la aplicación y cargar los datos
+        // Iniciar la aplicación en la pestaña del escáner por defecto
         document.addEventListener('DOMContentLoaded', () => {
-            loadUserData(); // Inicia el proceso de carga de datos
-            changeTab('generator');
+            changeTab('scanner');
         });
     </script>
 </body>
