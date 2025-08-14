@@ -142,7 +142,7 @@
         <!-- SECCIÓN: Página de validación de acceso -->
         <div id="result-page-section" class="hidden flex flex-col items-center space-y-6 text-center">
             <!-- Espacio para la foto del usuario -->
-            <img id="result-photo" class="w-32 h-32 rounded-full ring-4 ring-gray-300 object-cover mb-4 hidden" src="" alt="Foto del usuario">
+            <img id="result-photo" class="w-32 h-32 rounded-lg ring-4 ring-gray-300 object-cover mb-4 hidden" src="" alt="Foto del usuario">
             <h2 id="result-title" class="text-4xl font-bold"></h2>
             <p id="result-user-info" class="text-2xl font-semibold"></p>
             <div id="result-dates" class="text-lg text-gray-600"></div> <!-- NUEVO ELEMENTO PARA LAS FECHAS -->
@@ -276,13 +276,13 @@
 
                 // Agregar la imagen de perfil a la tarjeta
                 const userPhoto = document.createElement('img');
-                // Aumentamos el tamaño de la foto a 224x224px (w-56) para que sea el 80% del ancho de la tarjeta
-                userPhoto.className = 'w-56 h-56 rounded-full object-cover mb-4 ring-2 ring-gray-300';
+                // CAMBIO: Aumentamos el tamaño a 256x256px para un 80% del ancho de la tarjeta e hicimos las esquinas ligeramente redondeadas.
+                userPhoto.className = 'w-64 h-64 rounded-lg object-cover mb-4 ring-2 ring-gray-300';
                 // Usar la URL de la foto del JSON
                 userPhoto.src = user.photoUrl; 
                 userPhoto.alt = `Foto de perfil de ${user.name}`;
-                // Fallback en caso de que la imagen no cargue
-                userPhoto.onerror = () => { userPhoto.src = `https://placehold.co/224x224/CCCCCC/000000?text=${user.name.split(' ').map(n => n[0]).join('')}`; };
+                // Fallback en caso de que la imagen no cargue, ahora con el nuevo tamaño
+                userPhoto.onerror = () => { userPhoto.src = `https://placehold.co/256x256/CCCCCC/000000?text=${user.name.split(' ').map(n => n[0]).join('')}`; };
                 card.appendChild(userPhoto);
 
                 const name = document.createElement('p');
