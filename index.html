@@ -276,13 +276,13 @@
 
                 // Agregar la imagen de perfil a la tarjeta
                 const userPhoto = document.createElement('img');
-                // Se ha aumentado el tamaño de la foto a 128x128px, que es aproximadamente el 45% del ancho de la tarjeta en impresión.
-                userPhoto.className = 'w-32 h-32 rounded-full object-cover mb-4 ring-2 ring-gray-300';
+                // Aumentamos el tamaño de la foto a 224x224px (w-56) para que sea el 80% del ancho de la tarjeta
+                userPhoto.className = 'w-56 h-56 rounded-full object-cover mb-4 ring-2 ring-gray-300';
                 // Usar la URL de la foto del JSON
                 userPhoto.src = user.photoUrl; 
                 userPhoto.alt = `Foto de perfil de ${user.name}`;
                 // Fallback en caso de que la imagen no cargue
-                userPhoto.onerror = () => { userPhoto.src = `https://placehold.co/128x128/CCCCCC/000000?text=${user.name.split(' ').map(n => n[0]).join('')}`; };
+                userPhoto.onerror = () => { userPhoto.src = `https://placehold.co/224x224/CCCCCC/000000?text=${user.name.split(' ').map(n => n[0]).join('')}`; };
                 card.appendChild(userPhoto);
 
                 const name = document.createElement('p');
