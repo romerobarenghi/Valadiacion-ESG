@@ -251,49 +251,36 @@
             qrList.innerHTML = '';
             authorizedUsers.forEach(user => {
                 const card = document.createElement('div');
-                // Se usan valores fijos para el rectángulo áureo y un layout más integrado
-                // Se usa justify-between para distribuir los elementos en la parte superior e inferior
-                card.className = 'w-[320px] h-[518px] bg-gray-50 p-6 rounded-xl shadow-lg flex flex-col justify-between items-center printable-card';
+                // Se usa un layout de columna simple con espaciado para evitar que el QR se salga del borde.
+                card.className = 'w-[320px] h-[518px] bg-gray-50 p-6 rounded-xl shadow-lg flex flex-col items-center space-y-4 printable-card';
                 card.id = `card-${user.name.replace(/\s/g, '-')}`;
 
-                // Contenedor principal de la parte superior (foto y nombre)
-                const topContent = document.createElement('div');
-                topContent.className = 'flex flex-col items-center space-y-4';
-
-                // Imagen de perfil con tamaño ajustado (aumentada en 20%)
+                // Imagen de perfil cuadrada
                 const userPhoto = document.createElement('img');
                 userPhoto.className = 'w-48 h-48 rounded-lg object-cover ring-2 ring-gray-300';
                 userPhoto.src = user.photoUrl; 
                 userPhoto.alt = `Foto de perfil de ${user.name}`;
                 userPhoto.onerror = () => { userPhoto.src = `https://placehold.co/192x192/CCCCCC/000000?text=${user.name.split(' ').map(n => n[0]).join('')}`; };
-                topContent.appendChild(userPhoto);
+                card.appendChild(userPhoto);
 
                 // Nombre del usuario
                 const name = document.createElement('p');
                 name.className = 'text-2xl font-bold text-gray-700 text-center';
                 name.textContent = user.name;
-                topContent.appendChild(name);
-                
-                card.appendChild(topContent);
-
-                // Contenedor para la parte inferior (título y QR)
-                const bottomContent = document.createElement('div');
-                bottomContent.className = 'flex flex-col items-center space-y-4';
+                card.appendChild(name);
                 
                 // Título de la tarjeta (ID de Acceso)
                 const cardTitle = document.createElement('p');
                 cardTitle.className = 'text-sm font-semibold text-gray-400';
                 cardTitle.textContent = 'ID de Acceso';
-                bottomContent.appendChild(cardTitle);
+                card.appendChild(cardTitle);
 
-                // Canvas para el código QR con tamaño ajustado (reducido en 20%)
+                // Canvas para el código QR
                 const qrCanvas = document.createElement('canvas');
                 qrCanvas.id = `qr-canvas-${user.name.replace(/\s/g, '-')}`;
                 qrCanvas.className = 'w-32 h-32';
-                bottomContent.appendChild(qrCanvas);
+                card.appendChild(qrCanvas);
                 
-                card.appendChild(bottomContent);
-
                 QRCode.toCanvas(qrCanvas, user.name, { errorCorrectionLevel: 'H', scale: 8 }, function (error) {
                     if (error) console.error(error);
                 });
